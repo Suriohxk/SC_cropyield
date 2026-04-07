@@ -1,7 +1,8 @@
 import streamlit as st
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
 from typing import Tuple, List
 import pandas as pd
 
@@ -260,8 +261,6 @@ def denormalize_data(normalized_data: np.ndarray, mean: np.ndarray, std: np.ndar
 
 
 def plot_decision_boundary(perceptron, X, y, title="Decision Boundary"):
-    fig, ax = plt.subplots(figsize=(10, 6))
-
     x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
     y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
     xx, yy = np.meshgrid(np.linspace(x_min, x_max, 200),
@@ -270,15 +269,46 @@ def plot_decision_boundary(perceptron, X, y, title="Decision Boundary"):
     Z = perceptron.predict(np.c_[xx.ravel(), yy.ravel()])
     Z = Z.reshape(xx.shape)
 
-    ax.contourf(xx, yy, Z, alpha=0.3, cmap='RdYlGn')
+    fig = go.Figure()
 
-    scatter = ax.scatter(X[:, 0], X[:, 1], c=y, cmap='RdYlGn',
-                        edgecolors='black', s=100, alpha=0.8)
+    fig.add_trace(go.Contour(
+        x=xx[0],
+        y=yy[:, 0],
+        z=Z,
+        colorscale='RdYlGn',
+        opacity=0.3,
+        showscale=False,
+        contours=dict(
+            start=0,
+            end=1,
+            size=0.5,
+        )
+    ))
 
-    ax.set_xlabel('Feature 1', fontsize=12)
-    ax.set_ylabel('Feature 2', fontsize=12)
-    ax.set_title(title, fontsize=14, fontweight='bold')
-    plt.colorbar(scatter, ax=ax, label='Class')
+    fig.add_trace(go.Scatter(
+        x=X[:, 0],
+        y=X[:, 1],
+        mode='markers',
+        marker=dict(
+            size=12,
+            color=y,
+            colorscale='RdYlGn',
+            line=dict(color='black', width=1),
+            showscale=True,
+            colorbar=dict(title="Class")
+        ),
+        name='Data Points'
+    ))
+
+    fig.update_layout(
+        title=dict(text=title, x=0.5, xanchor='center', font=dict(size=16)),
+        xaxis_title='Feature 1',
+        yaxis_title='Feature 2',
+        width=700,
+        height=500,
+        showlegend=False,
+        template='plotly_white'
+    )
 
     return fig
 
@@ -398,44 +428,105 @@ elif page == "📊 Data Exploration":
 
     st.markdown("### 📊 Feature Distributions")
 
-    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-    axes = axes.flatten()
+    fig = make_subplots(
+        rows=2, cols=3,
+        subplot_titles=list(df.columns),
+        vertical_spacing=0.12,
+        horizontal_spacing=0.1
+    )
 
     for idx, col in enumerate(df.columns):
-        axes[idx].hist(df[col], bins=30, edgecolor='black', alpha=0.7, color='steelblue')
-        axes[idx].set_title(col, fontweight='bold')
-        axes[idx].set_xlabel(col)
-        axes[idx].set_ylabel('Frequency')
-        axes[idx].grid(alpha=0.3)
+        row = idx // 3 + 1
+        col_num = idx % 3 + 1
 
-    plt.tight_layout()
-    st.pyplot(fig)
+        fig.add_trace(
+            go.Histogram(
+                x=df[col],
+                nbinsx=30,
+                marker=dict(color='steelblue', line=dict(color='black', width=1)),
+                name=col,
+                showlegend=False
+            ),
+            row=row, col=col_num
+        )
+
+    fig.update_layout(
+        height=700,
+        showlegend=False,
+        title_text="Feature Distributions",
+        title_x=0.5,
+        template='plotly_white'
+    )
+
+    fig.update_xaxes(title_text="Value", row=2)
+    fig.update_yaxes(title_text="Frequency")
+
+    st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("### 🔗 Correlation Heatmap")
-    fig, ax = plt.subplots(figsize=(10, 8))
     correlation_matrix = df.corr()
-    sns.heatmap(correlation_matrix, annot=True, fmt='.2f', cmap='coolwarm',
-                center=0, square=True, ax=ax, cbar_kws={"shrink": 0.8})
-    ax.set_title('Feature Correlation Matrix', fontsize=14, fontweight='bold')
-    st.pyplot(fig)
+
+    fig = go.Figure(data=go.Heatmap(
+        z=correlation_matrix.values,
+        x=correlation_matrix.columns,
+        y=correlation_matrix.columns,
+        colorscale='RdBu',
+        zmid=0,
+        text=correlation_matrix.values.round(2),
+        texttemplate='%{text}',
+        textfont={"size": 10},
+        colorbar=dict(title="Correlation")
+    ))
+
+    fig.update_layout(
+        title=dict(text='Feature Correlation Matrix', x=0.5, xanchor='center', font=dict(size=16)),
+        width=800,
+        height=700,
+        template='plotly_white'
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("### 🎯 Yield vs Key Features")
-
-    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-    axes = axes.flatten()
 
     features = ['Rainfall (mm)', 'Temperature (°C)', 'Soil pH',
                 'Nitrogen (kg/ha)', 'Phosphorus (kg/ha)', 'Potassium (kg/ha)']
 
-    for idx, feature in enumerate(features):
-        axes[idx].scatter(df[feature], df['Yield (tons/ha)'], alpha=0.5, color='green')
-        axes[idx].set_xlabel(feature, fontweight='bold')
-        axes[idx].set_ylabel('Yield (tons/ha)', fontweight='bold')
-        axes[idx].set_title(f'Yield vs {feature}')
-        axes[idx].grid(alpha=0.3)
+    fig = make_subplots(
+        rows=2, cols=3,
+        subplot_titles=[f'Yield vs {f}' for f in features],
+        vertical_spacing=0.12,
+        horizontal_spacing=0.1
+    )
 
-    plt.tight_layout()
-    st.pyplot(fig)
+    for idx, feature in enumerate(features):
+        row = idx // 3 + 1
+        col_num = idx % 3 + 1
+
+        fig.add_trace(
+            go.Scatter(
+                x=df[feature],
+                y=df['Yield (tons/ha)'],
+                mode='markers',
+                marker=dict(color='green', size=5, opacity=0.5),
+                name=feature,
+                showlegend=False
+            ),
+            row=row, col=col_num
+        )
+
+        fig.update_xaxes(title_text=feature, row=row, col=col_num)
+        fig.update_yaxes(title_text='Yield (tons/ha)', row=row, col=col_num)
+
+    fig.update_layout(
+        height=700,
+        showlegend=False,
+        title_text="Yield vs Environmental Features",
+        title_x=0.5,
+        template='plotly_white'
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
     with st.expander("ℹ️ About the Dataset"):
         st.markdown("""
@@ -563,16 +654,26 @@ elif page == "🧠 McCulloch-Pitts & Perceptron":
 
                 with col1:
                     fig = plot_decision_boundary(perceptron, X_train, y_train, title)
-                    st.pyplot(fig)
+                    st.plotly_chart(fig, use_container_width=True)
 
                 with col2:
-                    fig2, ax2 = plt.subplots(figsize=(10, 6))
-                    ax2.plot(errors, linewidth=2, color='red')
-                    ax2.set_xlabel('Epoch', fontsize=12)
-                    ax2.set_ylabel('Average Error', fontsize=12)
-                    ax2.set_title('Training Error Over Time', fontsize=14, fontweight='bold')
-                    ax2.grid(alpha=0.3)
-                    st.pyplot(fig2)
+                    fig2 = go.Figure()
+                    fig2.add_trace(go.Scatter(
+                        x=list(range(len(errors))),
+                        y=errors,
+                        mode='lines',
+                        line=dict(color='red', width=2),
+                        name='Training Error'
+                    ))
+                    fig2.update_layout(
+                        title=dict(text='Training Error Over Time', x=0.5, xanchor='center', font=dict(size=16)),
+                        xaxis_title='Epoch',
+                        yaxis_title='Average Error',
+                        width=700,
+                        height=500,
+                        template='plotly_white'
+                    )
+                    st.plotly_chart(fig2, use_container_width=True)
 
                 st.success(f"**Training Accuracy: {accuracy:.2f}%**")
 
@@ -648,40 +749,74 @@ elif page == "🗺️ SOM Clustering":
             with col1:
                 st.markdown("### 🌡️ U-Matrix (Distance Map)")
                 umatrix = som.get_umatrix()
-                fig1, ax1 = plt.subplots(figsize=(8, 8))
-                im = ax1.imshow(umatrix, cmap='viridis', interpolation='nearest')
-                ax1.set_title('U-Matrix: Average Distance to Neighbors',
-                             fontsize=14, fontweight='bold')
-                ax1.set_xlabel('Grid Column')
-                ax1.set_ylabel('Grid Row')
-                plt.colorbar(im, ax=ax1, label='Average Distance')
 
+                annotations = []
                 for i in range(grid_rows):
                     for j in range(grid_cols):
-                        ax1.text(j, i, f'{umatrix[i, j]:.2f}',
-                                ha="center", va="center", color="white", fontsize=8)
-                st.pyplot(fig1)
+                        annotations.append(
+                            dict(
+                                x=j, y=i,
+                                text=f'{umatrix[i, j]:.2f}',
+                                showarrow=False,
+                                font=dict(color='white', size=10)
+                            )
+                        )
+
+                fig1 = go.Figure(data=go.Heatmap(
+                    z=umatrix,
+                    colorscale='Viridis',
+                    colorbar=dict(title="Avg Distance")
+                ))
+
+                fig1.update_layout(
+                    title=dict(text='U-Matrix: Average Distance to Neighbors', x=0.5, xanchor='center'),
+                    xaxis_title='Grid Column',
+                    yaxis_title='Grid Row',
+                    annotations=annotations,
+                    width=600,
+                    height=600,
+                    template='plotly_white'
+                )
+
+                st.plotly_chart(fig1, use_container_width=True)
 
             with col2:
                 st.markdown("### 🎯 Cluster Distribution")
-                fig2, ax2 = plt.subplots(figsize=(8, 8))
                 cluster_counts = np.zeros((grid_rows, grid_cols))
                 for cluster_id in cluster_map:
                     row = cluster_id // grid_cols
                     col = cluster_id % grid_cols
                     cluster_counts[row, col] += 1
 
-                im2 = ax2.imshow(cluster_counts, cmap='YlOrRd', interpolation='nearest')
-                ax2.set_title('Number of Samples per Cluster', fontsize=14, fontweight='bold')
-                ax2.set_xlabel('Grid Column')
-                ax2.set_ylabel('Grid Row')
-                plt.colorbar(im2, ax=ax2, label='Sample Count')
-
+                annotations = []
                 for i in range(grid_rows):
                     for j in range(grid_cols):
-                        ax2.text(j, i, f'{int(cluster_counts[i, j])}',
-                                ha="center", va="center", color="black", fontsize=10)
-                st.pyplot(fig2)
+                        annotations.append(
+                            dict(
+                                x=j, y=i,
+                                text=f'{int(cluster_counts[i, j])}',
+                                showarrow=False,
+                                font=dict(color='black', size=12)
+                            )
+                        )
+
+                fig2 = go.Figure(data=go.Heatmap(
+                    z=cluster_counts,
+                    colorscale='YlOrRd',
+                    colorbar=dict(title="Sample Count")
+                ))
+
+                fig2.update_layout(
+                    title=dict(text='Number of Samples per Cluster', x=0.5, xanchor='center'),
+                    xaxis_title='Grid Column',
+                    yaxis_title='Grid Row',
+                    annotations=annotations,
+                    width=600,
+                    height=600,
+                    template='plotly_white'
+                )
+
+                st.plotly_chart(fig2, use_container_width=True)
 
             st.markdown("### 📊 Average Yield per Cluster")
             cluster_yields = {}
@@ -696,31 +831,60 @@ elif page == "🗺️ SOM Clustering":
                 col = cluster_id % grid_cols
                 cluster_yield_grid[row, col] = avg_yield
 
-            fig3, ax3 = plt.subplots(figsize=(10, 8))
-            im3 = ax3.imshow(cluster_yield_grid, cmap='RdYlGn', interpolation='nearest')
-            ax3.set_title('Average Crop Yield per Cluster', fontsize=14, fontweight='bold')
-            ax3.set_xlabel('Grid Column')
-            ax3.set_ylabel('Grid Row')
-            plt.colorbar(im3, ax=ax3, label='Yield (tons/ha)')
-
+            annotations = []
             for i in range(grid_rows):
                 for j in range(grid_cols):
                     if cluster_yield_grid[i, j] > 0:
-                        ax3.text(j, i, f'{cluster_yield_grid[i, j]:.1f}',
-                                ha="center", va="center", color="black", fontsize=10)
-            st.pyplot(fig3)
+                        annotations.append(
+                            dict(
+                                x=j, y=i,
+                                text=f'{cluster_yield_grid[i, j]:.1f}',
+                                showarrow=False,
+                                font=dict(color='black', size=12)
+                            )
+                        )
+
+            fig3 = go.Figure(data=go.Heatmap(
+                z=cluster_yield_grid,
+                colorscale='RdYlGn',
+                colorbar=dict(title="Yield (tons/ha)")
+            ))
+
+            fig3.update_layout(
+                title=dict(text='Average Crop Yield per Cluster', x=0.5, xanchor='center'),
+                xaxis_title='Grid Column',
+                yaxis_title='Grid Row',
+                annotations=annotations,
+                width=900,
+                height=700,
+                template='plotly_white'
+            )
+
+            st.plotly_chart(fig3, use_container_width=True)
 
             st.markdown("### 📉 Training Progress")
             if som.training_history:
-                fig4, ax4 = plt.subplots(figsize=(10, 6))
                 epochs_list = [h['epoch'] for h in som.training_history]
                 errors_list = [h['error'] for h in som.training_history]
-                ax4.plot(epochs_list, errors_list, linewidth=2, color='purple')
-                ax4.set_xlabel('Epoch', fontsize=12)
-                ax4.set_ylabel('Average Quantization Error', fontsize=12)
-                ax4.set_title('SOM Training Progress', fontsize=14, fontweight='bold')
-                ax4.grid(alpha=0.3)
-                st.pyplot(fig4)
+
+                fig4 = go.Figure()
+                fig4.add_trace(go.Scatter(
+                    x=epochs_list,
+                    y=errors_list,
+                    mode='lines',
+                    line=dict(color='purple', width=2),
+                    name='Quantization Error'
+                ))
+
+                fig4.update_layout(
+                    title=dict(text='SOM Training Progress', x=0.5, xanchor='center', font=dict(size=16)),
+                    xaxis_title='Epoch',
+                    yaxis_title='Average Quantization Error',
+                    height=500,
+                    template='plotly_white'
+                )
+
+                st.plotly_chart(fig4, use_container_width=True)
 
             st.success(f"""
             ✅ **SOM Training Complete!**
@@ -842,31 +1006,60 @@ elif page == "🤖 MLP Training":
                 st.metric("Test MSE", f"{test_mse:.3f}")
 
             st.markdown("### 📈 Training Progress")
-            fig1, ax1 = plt.subplots(figsize=(12, 6))
             epochs_list = [h['epoch'] for h in mlp.training_history]
             mse_list = [h['mse'] for h in mlp.training_history]
-            ax1.plot(epochs_list, mse_list, linewidth=2, color='blue', label='Training MSE')
-            ax1.set_xlabel('Epoch', fontsize=12)
-            ax1.set_ylabel('Mean Squared Error (Normalized)', fontsize=12)
-            ax1.set_title('MLP Training Loss Curve', fontsize=14, fontweight='bold')
-            ax1.legend()
-            ax1.grid(alpha=0.3)
-            st.pyplot(fig1)
+
+            fig1 = go.Figure()
+            fig1.add_trace(go.Scatter(
+                x=epochs_list,
+                y=mse_list,
+                mode='lines',
+                line=dict(color='blue', width=2),
+                name='Training MSE'
+            ))
+
+            fig1.update_layout(
+                title=dict(text='MLP Training Loss Curve', x=0.5, xanchor='center', font=dict(size=16)),
+                xaxis_title='Epoch',
+                yaxis_title='Mean Squared Error (Normalized)',
+                height=500,
+                template='plotly_white'
+            )
+
+            st.plotly_chart(fig1, use_container_width=True)
 
             st.markdown("### 🎯 Prediction vs Actual (Test Set)")
-            fig2, ax2 = plt.subplots(figsize=(10, 8))
-            ax2.scatter(y_test, y_test_pred, alpha=0.6, s=50, color='green', edgecolors='black')
 
             min_val = min(y_test.min(), y_test_pred.min())
             max_val = max(y_test.max(), y_test_pred.max())
-            ax2.plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2, label='Perfect Prediction')
 
-            ax2.set_xlabel('Actual Yield (tons/ha)', fontsize=12, fontweight='bold')
-            ax2.set_ylabel('Predicted Yield (tons/ha)', fontsize=12, fontweight='bold')
-            ax2.set_title('MLP Predictions vs Actual Values', fontsize=14, fontweight='bold')
-            ax2.legend()
-            ax2.grid(alpha=0.3)
-            st.pyplot(fig2)
+            fig2 = go.Figure()
+
+            fig2.add_trace(go.Scatter(
+                x=y_test,
+                y=y_test_pred,
+                mode='markers',
+                marker=dict(color='green', size=8, opacity=0.6, line=dict(color='black', width=1)),
+                name='Predictions'
+            ))
+
+            fig2.add_trace(go.Scatter(
+                x=[min_val, max_val],
+                y=[min_val, max_val],
+                mode='lines',
+                line=dict(color='red', width=2, dash='dash'),
+                name='Perfect Prediction'
+            ))
+
+            fig2.update_layout(
+                title=dict(text='MLP Predictions vs Actual Values', x=0.5, xanchor='center', font=dict(size=16)),
+                xaxis_title='Actual Yield (tons/ha)',
+                yaxis_title='Predicted Yield (tons/ha)',
+                height=600,
+                template='plotly_white'
+            )
+
+            st.plotly_chart(fig2, use_container_width=True)
 
             st.markdown("### 📊 Residual Analysis")
             residuals = y_test - y_test_pred
@@ -874,24 +1067,41 @@ elif page == "🤖 MLP Training":
             col1, col2 = st.columns(2)
 
             with col1:
-                fig3, ax3 = plt.subplots(figsize=(10, 6))
-                ax3.scatter(y_test_pred, residuals, alpha=0.6, s=50, color='purple', edgecolors='black')
-                ax3.axhline(y=0, color='r', linestyle='--', linewidth=2)
-                ax3.set_xlabel('Predicted Yield (tons/ha)', fontsize=12)
-                ax3.set_ylabel('Residuals', fontsize=12)
-                ax3.set_title('Residual Plot', fontsize=14, fontweight='bold')
-                ax3.grid(alpha=0.3)
-                st.pyplot(fig3)
+                fig3 = go.Figure()
+                fig3.add_trace(go.Scatter(
+                    x=y_test_pred,
+                    y=residuals,
+                    mode='markers',
+                    marker=dict(color='purple', size=8, opacity=0.6, line=dict(color='black', width=1)),
+                    name='Residuals'
+                ))
+                fig3.add_hline(y=0, line_dash='dash', line_color='red', line_width=2)
+                fig3.update_layout(
+                    title=dict(text='Residual Plot', x=0.5, xanchor='center'),
+                    xaxis_title='Predicted Yield (tons/ha)',
+                    yaxis_title='Residuals',
+                    height=500,
+                    template='plotly_white'
+                )
+                st.plotly_chart(fig3, use_container_width=True)
 
             with col2:
-                fig4, ax4 = plt.subplots(figsize=(10, 6))
-                ax4.hist(residuals, bins=30, edgecolor='black', alpha=0.7, color='orange')
-                ax4.set_xlabel('Residual Value', fontsize=12)
-                ax4.set_ylabel('Frequency', fontsize=12)
-                ax4.set_title('Residual Distribution', fontsize=14, fontweight='bold')
-                ax4.axvline(x=0, color='r', linestyle='--', linewidth=2)
-                ax4.grid(alpha=0.3)
-                st.pyplot(fig4)
+                fig4 = go.Figure()
+                fig4.add_trace(go.Histogram(
+                    x=residuals,
+                    nbinsx=30,
+                    marker=dict(color='orange', line=dict(color='black', width=1)),
+                    name='Residuals'
+                ))
+                fig4.add_vline(x=0, line_dash='dash', line_color='red', line_width=2)
+                fig4.update_layout(
+                    title=dict(text='Residual Distribution', x=0.5, xanchor='center'),
+                    xaxis_title='Residual Value',
+                    yaxis_title='Frequency',
+                    height=500,
+                    template='plotly_white'
+                )
+                st.plotly_chart(fig4, use_container_width=True)
 
             st.markdown("### 📋 Performance Metrics Summary")
             metrics_df = pd.DataFrame({
@@ -1061,17 +1271,31 @@ elif page == "🌾 Crop Yield Predictor":
             df = st.session_state.data
             percentile = (df['Yield (tons/ha)'] < predicted_yield).mean() * 100
 
-            fig, ax = plt.subplots(figsize=(12, 6))
-            ax.hist(df['Yield (tons/ha)'], bins=50, alpha=0.7, color='skyblue',
-                   edgecolor='black', label='Historical Yields')
-            ax.axvline(predicted_yield, color='red', linestyle='--', linewidth=3,
-                      label=f'Your Prediction: {predicted_yield:.2f} tons/ha')
-            ax.set_xlabel('Yield (tons/ha)', fontsize=12, fontweight='bold')
-            ax.set_ylabel('Frequency', fontsize=12, fontweight='bold')
-            ax.set_title('Your Prediction vs Historical Data', fontsize=14, fontweight='bold')
-            ax.legend(fontsize=11)
-            ax.grid(alpha=0.3)
-            st.pyplot(fig)
+            fig = go.Figure()
+            fig.add_trace(go.Histogram(
+                x=df['Yield (tons/ha)'],
+                nbinsx=50,
+                marker=dict(color='skyblue', line=dict(color='black', width=1)),
+                name='Historical Yields',
+                opacity=0.7
+            ))
+            fig.add_vline(
+                x=predicted_yield,
+                line_dash='dash',
+                line_color='red',
+                line_width=3,
+                annotation_text=f'Your Prediction: {predicted_yield:.2f} tons/ha',
+                annotation_position='top right'
+            )
+            fig.update_layout(
+                title=dict(text='Your Prediction vs Historical Data', x=0.5, xanchor='center', font=dict(size=16)),
+                xaxis_title='Yield (tons/ha)',
+                yaxis_title='Frequency',
+                height=500,
+                template='plotly_white'
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
 
             st.info(f"📊 Your predicted yield is better than **{percentile:.1f}%** of historical data!")
 
@@ -1131,18 +1355,27 @@ elif page == "🌾 Crop Yield Predictor":
             results_df = pd.DataFrame(results)
             st.dataframe(results_df, use_container_width=True)
 
-            fig, ax = plt.subplots(figsize=(12, 6))
             scenarios = [r['Scenario'] for r in results]
             yields = [float(r['Predicted Yield']) for r in results]
             colors = ['green' if y >= 6.5 else 'orange' if y >= 5 else 'red' for y in yields]
 
-            bars = ax.bar(scenarios, yields, color=colors, edgecolor='black', alpha=0.7)
-            ax.set_ylabel('Predicted Yield (tons/ha)', fontsize=12, fontweight='bold')
-            ax.set_title('Sample Scenario Predictions', fontsize=14, fontweight='bold')
-            ax.grid(axis='y', alpha=0.3)
-            plt.xticks(rotation=45, ha='right')
-            plt.tight_layout()
-            st.pyplot(fig)
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=scenarios,
+                y=yields,
+                marker=dict(color=colors, line=dict(color='black', width=1)),
+                opacity=0.7
+            ))
+
+            fig.update_layout(
+                title=dict(text='Sample Scenario Predictions', x=0.5, xanchor='center', font=dict(size=16)),
+                xaxis_title='Scenario',
+                yaxis_title='Predicted Yield (tons/ha)',
+                height=500,
+                template='plotly_white'
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
     with st.expander("ℹ️ About the Predictor"):
