@@ -237,7 +237,7 @@ def generate_crop_data(n_samples: int = 500) -> pd.DataFrame:
 
     df = pd.DataFrame({
         'Rainfall (mm)': rainfall,
-        'Temperature (°C)': temperature,
+        'Temperature': temperature,
         'Soil pH': soil_ph,
         'Nitrogen (kg/ha)': nitrogen,
         'Phosphorus (kg/ha)': phosphorus,
@@ -313,19 +313,19 @@ def plot_decision_boundary(perceptron, X, y, title="Decision Boundary"):
     return fig
 
 
-st.sidebar.title("🌾 Navigation")
+st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Go to",
-    ["🏠 Home", "📊 Data Exploration", "🧠 McCulloch-Pitts & Perceptron",
-     "🗺️ SOM Clustering", "🤖 MLP Training", "🌾 Crop Yield Predictor"]
+    [" Home", "Data Exploration",         #"McCulloch-Pitts & Perceptron"
+     "SOM Clustering", "MLP Training", "Crop Yield Predictor"]
 )
 
 if 'data' not in st.session_state:
-    st.session_state.data = generate_crop_data(500)
+    st.session_state.data = pd.read_csv("crop_data.csv")  # st.session_state.data = generate_crop_data(500)
     st.session_state.models_trained = False
 
-if page == "🏠 Home":
-    st.title("🌾 Crop Yield Predictor Using Shallow Neural Networks")
+if page == " Home":
+    st.title("Crop Yield Predictor Using Shallow Neural Networks")
     st.markdown("### Soft Computing Course Project")
 
     st.markdown("""
@@ -342,7 +342,7 @@ if page == "🏠 Home":
     - Master supervised learning with Multi-Layer Perceptrons
     - Apply hybrid approaches for real-world regression problems
 
-    ### 🧠 Syllabus Concepts Covered
+    ### Syllabus Concepts Covered
 
     1. **McCulloch-Pitts Neuron**
        - Binary threshold activation
@@ -374,11 +374,11 @@ if page == "🏠 Home":
        - MLP for final prediction
        - Combines unsupervised and supervised learning
 
-    ### 🌾 Application Domain: Crop Yield Prediction
+    ### Application Domain: Crop Yield Prediction
 
     Predict agricultural yield based on:
     - 🌧️ Rainfall (mm)
-    - 🌡️ Temperature (°C)
+    - 🌡️ Temperature
     - 🧪 Soil pH
     - 🍃 Nitrogen, Phosphorus, Potassium fertilizers (kg/ha)
 
@@ -401,13 +401,13 @@ if page == "🏠 Home":
 
     """)
 
-    st.info("💡 **Tip**: Navigate through the sections in order for the best learning experience!")
+    # st.info("💡 **Tip**: Navigate through the sections in order for the best learning experience!")
 
-    st.markdown("---")
-    st.markdown("**Built as Soft Computing Course Project** | All Neural Networks Implemented from Scratch")
+    # st.markdown("---")
+    # st.markdown("**Built as Soft Computing Course Project** | All Neural Networks Implemented from Scratch")
 
-elif page == "📊 Data Exploration":
-    st.title("📊 Data Exploration")
+elif page == "Data Exploration":
+    st.title("Data Exploration")
     st.markdown("### Understanding Our Synthetic Crop Dataset")
 
     df = st.session_state.data
@@ -426,10 +426,13 @@ elif page == "📊 Data Exploration":
     st.markdown("### 🔍 Sample Data")
     st.dataframe(df.head(10), use_container_width=True)
 
-    st.markdown("### 📊 Feature Distributions")
+    st.markdown("### Feature Distributions")
 
+    df = st.session_state.data
+
+    # Fixed: 3x3 grid to fit all 7 features cleanly
     fig = make_subplots(
-        rows=2, cols=3,
+        rows=3, cols=3,
         subplot_titles=list(df.columns),
         vertical_spacing=0.12,
         horizontal_spacing=0.1
@@ -451,14 +454,15 @@ elif page == "📊 Data Exploration":
         )
 
     fig.update_layout(
-        height=700,
+        height=900,  # Increased height for 3 rows
         showlegend=False,
         title_text="Feature Distributions",
         title_x=0.5,
         template='plotly_white'
     )
 
-    fig.update_xaxes(title_text="Value", row=2)
+    # Properly label axes for all rows
+    fig.update_xaxes(title_text="Value", row=3)   # Only bottom row needs x-label
     fig.update_yaxes(title_text="Frequency")
 
     st.plotly_chart(fig, use_container_width=True)
@@ -489,7 +493,7 @@ elif page == "📊 Data Exploration":
 
     st.markdown("### 🎯 Yield vs Key Features")
 
-    features = ['Rainfall (mm)', 'Temperature (°C)', 'Soil pH',
+    features = ['Rainfall (mm)', 'Temperature', 'Soil pH',
                 'Nitrogen (kg/ha)', 'Phosphorus (kg/ha)', 'Potassium (kg/ha)']
 
     fig = make_subplots(
@@ -545,162 +549,162 @@ elif page == "📊 Data Exploration":
         - Random noise to simulate natural variation
         """)
 
-elif page == "🧠 McCulloch-Pitts & Perceptron":
-    st.title("🧠 McCulloch-Pitts Neuron & Single-Layer Perceptron")
+# elif page == "McCulloch-Pitts & Perceptron":
+#     st.title("McCulloch-Pitts Neuron & Single-Layer Perceptron")
 
-    tab1, tab2 = st.tabs(["McCulloch-Pitts Neuron", "Single-Layer Perceptron"])
+#     tab1, tab2 = st.tabs(["McCulloch-Pitts Neuron", "Single-Layer Perceptron"])
 
-    with tab1:
-        st.markdown("### McCulloch-Pitts Neuron Model")
-        st.markdown("""
-        The **McCulloch-Pitts neuron** (1943) is the foundational model of artificial neurons.
+#     with tab1:
+#         st.markdown("### McCulloch-Pitts Neuron Model")
+#         st.markdown("""
+#         The **McCulloch-Pitts neuron** (1943) is the foundational model of artificial neurons.
 
-        **Characteristics:**
-        - Binary inputs (0 or 1)
-        - Fixed weights
-        - Threshold activation function
-        - No learning capability
-        """)
+#         **Characteristics:**
+#         - Binary inputs (0 or 1)
+#         - Fixed weights
+#         - Threshold activation function
+#         - No learning capability
+#         """)
 
-        st.markdown("### 🎮 Interactive Demo: Logic Gates")
+#         st.markdown("### 🎮 Interactive Demo: Logic Gates")
 
-        gate_type = st.selectbox("Select Logic Gate", ["AND", "OR", "NAND", "NOR"])
+#         gate_type = st.selectbox("Select Logic Gate", ["AND", "OR", "NAND", "NOR"])
 
-        col1, col2 = st.columns(2)
-        with col1:
-            input1 = st.selectbox("Input 1", [0, 1], key="mp_i1")
-        with col2:
-            input2 = st.selectbox("Input 2", [0, 1], key="mp_i2")
+#         col1, col2 = st.columns(2)
+#         with col1:
+#             input1 = st.selectbox("Input 1", [0, 1], key="mp_i1")
+#         with col2:
+#             input2 = st.selectbox("Input 2", [0, 1], key="mp_i2")
 
-        mp_neuron = McCullochPittsNeuron(n_inputs=2)
+#         mp_neuron = McCullochPittsNeuron(n_inputs=2)
 
-        if gate_type == "AND":
-            mp_neuron.set_weights(np.array([1, 1]))
-            mp_neuron.threshold = 2
-        elif gate_type == "OR":
-            mp_neuron.set_weights(np.array([1, 1]))
-            mp_neuron.threshold = 1
-        elif gate_type == "NAND":
-            mp_neuron.set_weights(np.array([-1, -1]))
-            mp_neuron.threshold = -1
-        elif gate_type == "NOR":
-            mp_neuron.set_weights(np.array([-1, -1]))
-            mp_neuron.threshold = -2
+#         if gate_type == "AND":
+#             mp_neuron.set_weights(np.array([1, 1]))
+#             mp_neuron.threshold = 2
+#         elif gate_type == "OR":
+#             mp_neuron.set_weights(np.array([1, 1]))
+#             mp_neuron.threshold = 1
+#         elif gate_type == "NAND":
+#             mp_neuron.set_weights(np.array([-1, -1]))
+#             mp_neuron.threshold = -1
+#         elif gate_type == "NOR":
+#             mp_neuron.set_weights(np.array([-1, -1]))
+#             mp_neuron.threshold = -2
 
-        output = mp_neuron.activate(np.array([input1, input2]))
+#         output = mp_neuron.activate(np.array([input1, input2]))
 
-        st.markdown(f"### Output: **{output}**")
+#         st.markdown(f"### Output: **{output}**")
 
-        st.markdown(f"""
-        **Configuration for {gate_type} gate:**
-        - Weights: {mp_neuron.weights}
-        - Threshold: {mp_neuron.threshold}
-        - Calculation: {input1} × {mp_neuron.weights[0]} + {input2} × {mp_neuron.weights[1]} = {input1 * mp_neuron.weights[0] + input2 * mp_neuron.weights[1]}
-        - Result: {'≥' if output == 1 else '<'} threshold ({mp_neuron.threshold})
-        """)
+#         st.markdown(f"""
+#         **Configuration for {gate_type} gate:**
+#         - Weights: {mp_neuron.weights}
+#         - Threshold: {mp_neuron.threshold}
+#         - Calculation: {input1} × {mp_neuron.weights[0]} + {input2} × {mp_neuron.weights[1]} = {input1 * mp_neuron.weights[0] + input2 * mp_neuron.weights[1]}
+#         - Result: {'≥' if output == 1 else '<'} threshold ({mp_neuron.threshold})
+#         """)
 
-        truth_table = {
-            "AND": [[0,0,0], [0,1,0], [1,0,0], [1,1,1]],
-            "OR": [[0,0,0], [0,1,1], [1,0,1], [1,1,1]],
-            "NAND": [[0,0,1], [0,1,1], [1,0,1], [1,1,0]],
-            "NOR": [[0,0,1], [0,1,0], [1,0,0], [1,1,0]]
-        }
+#         truth_table = {
+#             "AND": [[0,0,0], [0,1,0], [1,0,0], [1,1,1]],
+#             "OR": [[0,0,0], [0,1,1], [1,0,1], [1,1,1]],
+#             "NAND": [[0,0,1], [0,1,1], [1,0,1], [1,1,0]],
+#             "NOR": [[0,0,1], [0,1,0], [1,0,0], [1,1,0]]
+#         }
 
-        st.markdown(f"### Truth Table for {gate_type}")
-        tt_df = pd.DataFrame(truth_table[gate_type], columns=["Input 1", "Input 2", "Output"])
-        st.dataframe(tt_df, use_container_width=True)
+#         st.markdown(f"### Truth Table for {gate_type}")
+#         tt_df = pd.DataFrame(truth_table[gate_type], columns=["Input 1", "Input 2", "Output"])
+#         st.dataframe(tt_df, use_container_width=True)
 
-    with tab2:
-        st.markdown("### Single-Layer Perceptron with Delta Learning Rule")
-        st.markdown("""
-        The **Perceptron** (Rosenblatt, 1958) adds learning capability to the McCulloch-Pitts model.
+#     with tab2:
+#         st.markdown("### Single-Layer Perceptron with Delta Learning Rule")
+#         st.markdown("""
+#         The **Perceptron** (Rosenblatt, 1958) adds learning capability to the McCulloch-Pitts model.
 
-        **Delta Learning Rule:**
-        ```
-        Δw = η × (target - output) × input
-        ```
-        Where η is the learning rate.
-        """)
+#         **Delta Learning Rule:**
+#         ```
+#         Δw = η × (target - output) × input
+#         ```
+#         Where η is the learning rate.
+#         """)
 
-        st.markdown("### 📚 Linear Separability Demonstration")
+#         st.markdown("### 📚 Linear Separability Demonstration")
 
-        problem_type = st.radio("Select Problem Type:",
-                                ["Linearly Separable (AND)", "Non-Linearly Separable (XOR)"])
+#         problem_type = st.radio("Select Problem Type:",
+#                                 ["Linearly Separable (AND)", "Non-Linearly Separable (XOR)"])
 
-        col1, col2 = st.columns(2)
-        with col1:
-            learning_rate = st.slider("Learning Rate", 0.01, 1.0, 0.1, 0.01)
-        with col2:
-            epochs = st.slider("Training Epochs", 10, 200, 50, 10)
+#         col1, col2 = st.columns(2)
+#         with col1:
+#             learning_rate = st.slider("Learning Rate", 0.01, 1.0, 0.1, 0.01)
+#         with col2:
+#             epochs = st.slider("Training Epochs", 10, 200, 50, 10)
 
-        if st.button("Train Perceptron", key="train_perceptron"):
-            with st.spinner("Training..."):
-                if problem_type == "Linearly Separable (AND)":
-                    X_train = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
-                    y_train = np.array([0, 0, 0, 1])
-                    title = "AND Problem (Linearly Separable)"
-                else:
-                    X_train = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
-                    y_train = np.array([0, 1, 1, 0])
-                    title = "XOR Problem (NOT Linearly Separable)"
+#         if st.button("Train Perceptron", key="train_perceptron"):
+#             with st.spinner("Training..."):
+#                 if problem_type == "Linearly Separable (AND)":
+#                     X_train = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+#                     y_train = np.array([0, 0, 0, 1])
+#                     title = "AND Problem (Linearly Separable)"
+#                 else:
+#                     X_train = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+#                     y_train = np.array([0, 1, 1, 0])
+#                     title = "XOR Problem (NOT Linearly Separable)"
 
-                perceptron = SingleLayerPerceptron(n_inputs=2, learning_rate=learning_rate)
-                errors = perceptron.train(X_train, y_train, epochs=epochs)
+#                 perceptron = SingleLayerPerceptron(n_inputs=2, learning_rate=learning_rate)
+#                 errors = perceptron.train(X_train, y_train, epochs=epochs)
 
-                predictions = perceptron.predict(X_train)
-                accuracy = np.mean(predictions == y_train) * 100
+#                 predictions = perceptron.predict(X_train)
+#                 accuracy = np.mean(predictions == y_train) * 100
 
-                col1, col2 = st.columns(2)
+#                 col1, col2 = st.columns(2)
 
-                with col1:
-                    fig = plot_decision_boundary(perceptron, X_train, y_train, title)
-                    st.plotly_chart(fig, use_container_width=True)
+#                 with col1:
+#                     fig = plot_decision_boundary(perceptron, X_train, y_train, title)
+#                     st.plotly_chart(fig, use_container_width=True)
 
-                with col2:
-                    fig2 = go.Figure()
-                    fig2.add_trace(go.Scatter(
-                        x=list(range(len(errors))),
-                        y=errors,
-                        mode='lines',
-                        line=dict(color='red', width=2),
-                        name='Training Error'
-                    ))
-                    fig2.update_layout(
-                        title=dict(text='Training Error Over Time', x=0.5, xanchor='center', font=dict(size=16)),
-                        xaxis_title='Epoch',
-                        yaxis_title='Average Error',
-                        width=700,
-                        height=500,
-                        template='plotly_white'
-                    )
-                    st.plotly_chart(fig2, use_container_width=True)
+#                 with col2:
+#                     fig2 = go.Figure()
+#                     fig2.add_trace(go.Scatter(
+#                         x=list(range(len(errors))),
+#                         y=errors,
+#                         mode='lines',
+#                         line=dict(color='red', width=2),
+#                         name='Training Error'
+#                     ))
+#                     fig2.update_layout(
+#                         title=dict(text='Training Error Over Time', x=0.5, xanchor='center', font=dict(size=16)),
+#                         xaxis_title='Epoch',
+#                         yaxis_title='Average Error',
+#                         width=700,
+#                         height=500,
+#                         template='plotly_white'
+#                     )
+#                     st.plotly_chart(fig2, use_container_width=True)
 
-                st.success(f"**Training Accuracy: {accuracy:.2f}%**")
+#                 st.success(f"**Training Accuracy: {accuracy:.2f}%**")
 
-                st.markdown("### Predictions")
-                results_df = pd.DataFrame({
-                    'Input 1': X_train[:, 0],
-                    'Input 2': X_train[:, 1],
-                    'Target': y_train,
-                    'Prediction': predictions,
-                    'Correct': predictions == y_train
-                })
-                st.dataframe(results_df, use_container_width=True)
+#                 st.markdown("### Predictions")
+#                 results_df = pd.DataFrame({
+#                     'Input 1': X_train[:, 0],
+#                     'Input 2': X_train[:, 1],
+#                     'Target': y_train,
+#                     'Prediction': predictions,
+#                     'Correct': predictions == y_train
+#                 })
+#                 st.dataframe(results_df, use_container_width=True)
 
-                if "XOR" in problem_type and accuracy < 100:
-                    st.warning("""
-                    ⚠️ **Linear Separability Limitation Demonstrated!**
+#                 if "XOR" in problem_type and accuracy < 100:
+#                     st.warning("""
+#                     ⚠️ **Linear Separability Limitation Demonstrated!**
 
-                    The single-layer perceptron **cannot** solve the XOR problem because:
-                    - XOR is not linearly separable
-                    - No single straight line can separate the classes
-                    - This limitation led to the development of multi-layer networks
+#                     The single-layer perceptron **cannot** solve the XOR problem because:
+#                     - XOR is not linearly separable
+#                     - No single straight line can separate the classes
+#                     - This limitation led to the development of multi-layer networks
 
-                    **Solution**: Use Multi-Layer Perceptron (see MLP Training page)
-                    """)
+#                     **Solution**: Use Multi-Layer Perceptron (see MLP Training page)
+#                     """)
 
-elif page == "🗺️ SOM Clustering":
-    st.title("🗺️ Self-Organizing Map (SOM) Clustering")
+elif page == "SOM Clustering":
+    st.title("Self-Organizing Map (SOM) Clustering")
 
     st.markdown("""
     **Self-Organizing Maps** use **Winner-Take-All** competitive learning to create
@@ -818,7 +822,7 @@ elif page == "🗺️ SOM Clustering":
 
                 st.plotly_chart(fig2, use_container_width=True)
 
-            st.markdown("### 📊 Average Yield per Cluster")
+            st.markdown("### Average Yield per Cluster")
             cluster_yields = {}
             for cluster_id in range(grid_rows * grid_cols):
                 mask = cluster_map == cluster_id
@@ -912,8 +916,8 @@ elif page == "🗺️ SOM Clustering":
         - Reveals which environmental combinations produce best results
         """)
 
-elif page == "🤖 MLP Training":
-    st.title("🤖 Multi-Layer Perceptron Training")
+elif page == "MLP Training":
+    st.title("Multi-Layer Perceptron Training")
 
     st.markdown("""
     **Multi-Layer Perceptron (MLP)** with backpropagation can learn non-linear relationships.
@@ -1061,7 +1065,7 @@ elif page == "🤖 MLP Training":
 
             st.plotly_chart(fig2, use_container_width=True)
 
-            st.markdown("### 📊 Residual Analysis")
+            st.markdown("### Residual Analysis")
             residuals = y_test - y_test_pred
 
             col1, col2 = st.columns(2)
@@ -1143,12 +1147,12 @@ elif page == "🤖 MLP Training":
         - **MAE**: Average absolute error (robust to outliers)
         """)
 
-elif page == "🌾 Crop Yield Predictor":
-    st.title("🌾 Crop Yield Predictor")
+elif page == "Crop Yield Predictor":
+    st.title("Crop Yield Predictor")
     st.markdown("### Make Predictions Using Trained Neural Networks")
 
     if not st.session_state.models_trained:
-        st.warning("⚠️ Please train the MLP model first on the **🤖 MLP Training** page!")
+        st.warning("⚠️ Please train the MLP model first on the **MLP Training** page!")
         st.info("💡 Go to MLP Training → Configure parameters → Click 'Train MLP on Crop Data'")
     else:
         st.success("✅ Models are trained and ready for predictions!")
@@ -1159,7 +1163,7 @@ elif page == "🌾 Crop Yield Predictor":
 
         with col1:
             rainfall = st.slider("🌧️ Rainfall (mm)", 400, 1200, 800, 10)
-            temperature = st.slider("🌡️ Temperature (°C)", 15.0, 35.0, 25.0, 0.5)
+            temperature = st.slider("🌡️ Temperature", 15.0, 35.0, 25.0, 0.5)
             soil_ph = st.slider("🧪 Soil pH", 5.5, 8.0, 6.5, 0.1)
 
         with col2:
@@ -1219,7 +1223,7 @@ elif page == "🌾 Crop Yield Predictor":
                     value=f"{confidence}%"
                 )
 
-            st.markdown("### 📊 Input Summary")
+            st.markdown("### Input Summary")
             input_df = pd.DataFrame({
                 'Parameter': ['Rainfall', 'Temperature', 'Soil pH', 'Nitrogen', 'Phosphorus', 'Potassium'],
                 'Value': [f'{rainfall} mm', f'{temperature}°C', f'{soil_ph}',
@@ -1297,7 +1301,7 @@ elif page == "🌾 Crop Yield Predictor":
 
             st.plotly_chart(fig, use_container_width=True)
 
-            st.info(f"📊 Your predicted yield is better than **{percentile:.1f}%** of historical data!")
+            st.info(f"Your predicted yield is better than **{percentile:.1f}%** of historical data!")
 
         st.markdown("---")
         st.markdown("### 🧪 Sample Predictions")
@@ -1404,7 +1408,7 @@ elif page == "🌾 Crop Yield Predictor":
         require extensive domain expertise, regional data, and consideration of many additional factors.
         """)
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("**Built as Soft Computing Course Project**")
-st.sidebar.markdown("All Neural Networks Implemented from Scratch")
-st.sidebar.info("Navigate through pages to explore different concepts!")
+# st.sidebar.markdown("---")
+# st.sidebar.markdown("**Built as Soft Computing Course Project**")
+# st.sidebar.markdown("All Neural Networks Implemented from Scratch")
+# st.sidebar.info("Navigate through pages to explore different concepts!")
